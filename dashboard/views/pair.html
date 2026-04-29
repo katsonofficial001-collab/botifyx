@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Botify X — Pairing Portal</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(circle at top, #1a1f2e 0%, #0a0d14 100%);
+    color: #e6e8eb;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    background: #141821;
+    border: 1px solid #232838;
+    border-radius: 16px;
+    padding: 36px 28px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    text-align: center;
+  }
+  .brand {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0 0 6px;
+    background: linear-gradient(135deg, #22c55e, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .sub { color: #8b94a7; margin: 0 0 28px; font-size: 14px; }
+  .code {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 38px;
+    font-weight: 800;
+    letter-spacing: 6px;
+    background: #0d1018;
+    border: 1px dashed #3a4254;
+    border-radius: 12px;
+    padding: 22px 8px;
+    color: #4ade80;
+    margin: 12px 0 18px;
+    user-select: all;
+    word-break: break-all;
+  }
+  .phone { color: #cbd2dd; font-size: 15px; margin-bottom: 18px; }
+  .phone span { color: #fff; font-weight: 600; }
+  .pill {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 18px;
+  }
+  .pill.idle { background: rgba(139,148,167,0.15); color: #cbd2dd; }
+  .pill.requesting { background: rgba(234,179,8,0.15); color: #fbbf24; }
+  .pill.waiting_code { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .pill.paired { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .pill.error { background: rgba(239,68,68,0.15); color: #f87171; }
+  .pill.logged_out { background: rgba(239,68,68,0.15); color: #f87171; }
+  label {
+    display: block;
+    font-size: 12px;
+    color: #8b94a7;
+    margin: 4px 0 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    text-align: left;
+  }
+  input {
+    width: 100%;
+    padding: 13px 14px;
+    background: #0d1018;
+    color: #e6e8eb;
+    border: 1px solid #232838;
+    border-radius: 10px;
+    font-size: 16px;
+    outline: none;
+    transition: border 0.15s;
+  }
+  input:focus { border-color: #22c55e; }
+  .hint {
+    font-size: 12px;
+    color: #5b6478;
+    margin-top: 6px;
+    text-align: left;
+  }
+  button {
+    width: 100%;
+    margin-top: 18px;
+    padding: 14px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #06120a;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+  }
+  button:hover { filter: brightness(1.05); }
+  button[disabled] { opacity: 0.5; cursor: not-allowed; }
+  .reset-btn {
+    background: transparent;
+    color: #8b94a7;
+    margin-top: 10px;
+    font-weight: 500;
+    border: 1px solid #232838;
+  }
+  .reset-btn:hover { color: #fff; border-color: #3a4254; }
+  .steps {
+    text-align: left;
+    background: #0d1018;
+    border: 1px solid #232838;
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-top: 18px;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: #cbd2dd;
+  }
+  .steps b { color: #fff; }
+  .steps ol { margin: 8px 0 0; padding-left: 22px; }
+  .err {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #fca5a5;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    margin-bottom: 14px;
+    text-align: left;
+  }
+  .ok {
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.3);
+    color: #86efac;
+    padding: 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    margin-top: 10px;
+  }
+  .pulse {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    margin-right: 8px;
+    animation: pulse 1.4s ease-in-out infinite;
+    vertical-align: middle;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.4); }
+  }
+  .foot { margin-top: 22px; color: #5b6478; font-size: 12px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1 class="brand">Botify X</h1>
+    <p class="sub">Pairing portal</p>
+    <div id="content">Loading…</div>
+    <div class="foot">Botify X v1.0.0</div>
+  </div>
+
+<script>
+const DEFAULT_PHONE = '__DEFAULT_PHONE__';
+
+const $ = (id) => document.getElementById(id);
+
+function escape(str) {
+  return String(str || '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+function renderForm(s, errMsg) {
+  return `
+    ${errMsg ? `<div class="err">${escape(errMsg)}</div>` : ''}
+    <div class="pill idle">Ready to link</div>
+    <form id="pair-form">
+      <label for="phone">Phone number (with country code)</label>
+      <input id="phone" name="phone" inputmode="numeric" placeholder="2349075928878"
+             value="${escape(s.phone || DEFAULT_PHONE)}" autocomplete="off" required>
+      <div class="hint">No +, no spaces. Example: 2349075928878</div>
+      <button type="submit" id="get-code">Get pairing code</button>
+    </form>
+    <div class="steps">
+      <b>What happens next:</b>
+      <ol>
+        <li>Tap <b>Get pairing code</b></li>
+        <li>An 8-character code will appear on this page</li>
+        <li>On your phone: WhatsApp → Settings → Linked devices →
+            Link a device → <b>"Link with phone number instead"</b></li>
+        <li>Enter your phone number, then type the code</li>
+      </ol>
+    </div>`;
+}
+
+function renderRequesting(s) {
+  return `
+    <div class="pill requesting"><span class="pulse"></span>Requesting code…</div>
+    <div class="phone">Bot phone: <span>+${escape(s.phone || '')}</span></div>
+    <div class="steps">Hang on a moment, fetching a fresh code from WhatsApp.</div>`;
+}
+
+function renderCode(s) {
+  return `
+    <div class="pill waiting_code"><span class="pulse"></span>Waiting for you to enter the code</div>
+    <div class="phone">Bot phone: <span>+${escape(s.phone || '')}</span></div>
+    <div class="code">${escape(s.formattedCode || '')}</div>
+    <div class="steps">
+      <b>On your phone, do this now:</b>
+      <ol>
+        <li>Open <b>WhatsApp</b></li>
+        <li>Tap <b>Settings</b> (or three dots ⋮)</li>
+        <li>Tap <b>Linked devices → Link a device</b></li>
+        <li>Tap <b>"Link with phone number instead"</b> (small link)</li>
+        <li>Enter <b>+${escape(s.phone || 'your number')}</b></li>
+        <li>Type the code shown above</li>
+      </ol>
+    </div>
+    <button class="reset-btn" id="reset-btn">Use a different number</button>`;
+}
+
+function renderPaired(s) {
+  return `
+    <div class="pill paired">✓ Connected</div>
+    <div class="ok">
+      Botify X is paired with WhatsApp and online.<br>
+      ${s.pairedAt ? 'Connected at ' + new Date(s.pairedAt).toLocaleString() : ''}
+    </div>
+    <div class="steps">You can close this page. The bot will stay linked.</div>
+    <a href="/admin/login" class="reset-btn" style="text-decoration:none;display:inline-block;text-align:center;margin-top:10px">Open admin panel →</a>`;
+}
+
+function renderError(s) {
+  return `
+    <div class="pill error">Error</div>
+    <div class="err">${escape(s.message || 'Unknown error.')}</div>
+    <button class="reset-btn" id="reset-btn">Try again</button>`;
+}
+
+function renderLoggedOut(s) {
+  return `
+    <div class="pill logged_out">Logged out</div>
+    <div class="err">${escape(s.message || 'Bot was logged out from WhatsApp.')}</div>
+    <div class="steps">Old session was cleared automatically. Click below to link a number again.</div>
+    <button class="reset-btn" id="reset-btn">Pair WhatsApp again</button>`;
+}
+
+function render(s, errMsg) {
+  let html;
+  switch (s.status) {
+    case 'requesting':   html = renderRequesting(s); break;
+    case 'waiting_code': html = renderCode(s); break;
+    case 'paired':       html = renderPaired(s); break;
+    case 'error':        html = renderError(s); break;
+    case 'logged_out':   html = renderLoggedOut(s); break;
+    default:             html = renderForm(s, errMsg);
+  }
+  $('content').innerHTML = html;
+
+  const form = document.getElementById('pair-form');
+  if (form) form.addEventListener('submit', onSubmit);
+  const reset = document.getElementById('reset-btn');
+  if (reset) reset.addEventListener('click', onReset);
+}
+
+async function fetchState() {
+  try {
+    const res = await fetch('/pair.json', { cache: 'no-store' });
+    return await res.json();
+  } catch (err) {
+    return { status: 'error', message: 'Cannot reach server.' };
+  }
+}
+
+async function refresh(errMsg) {
+  const s = await fetchState();
+  render(s, errMsg);
+}
+
+async function onSubmit(e) {
+  e.preventDefault();
+  const phone = $('phone').value.trim();
+  $('get-code').disabled = true;
+  $('get-code').textContent = 'Requesting…';
+  try {
+    const res = await fetch('/pair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      await refresh(data.error || 'Failed to get pairing code.');
+    } else {
+      await refresh();
+    }
+  } catch (err) {
+    await refresh('Network error: ' + err.message);
+  }
+}
+
+async function onReset(e) {
+  e.preventDefault();
+  await fetch('/pair/reset', { method: 'POST' });
+  await refresh();
+}
+
+refresh();
+setInterval(refresh, 4000);
+</script>
+</body>
+</html>

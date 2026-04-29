@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Botify X — Admin Panel</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(circle at top, #1a1f2e 0%, #0a0d14 100%);
+    color: #e6e8eb;
+    margin: 0;
+    min-height: 100vh;
+    padding: 24px 16px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 28px; flex-wrap: wrap; gap: 12px;
+  }
+  .brand {
+    font-size: 22px; font-weight: 700;
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .brand small { color: #5b6478; font-size: 12px; font-weight: 500; -webkit-text-fill-color: #5b6478; }
+  .logout {
+    color: #8b94a7; text-decoration: none; font-size: 13px;
+    padding: 8px 14px; border: 1px solid #232838; border-radius: 8px;
+  }
+  .logout:hover { color: #fff; border-color: #3a4254; }
+  .grid { display: grid; gap: 14px; }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 720px) { .grid-4, .grid-2 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 460px) { .grid-4, .grid-2 { grid-template-columns: 1fr; } }
+  .card {
+    background: #141821; border: 1px solid #232838; border-radius: 14px; padding: 18px 20px;
+  }
+  .card h2 { margin: 0 0 14px; font-size: 14px; color: #cbd2dd; text-transform: uppercase; letter-spacing: 1px; }
+  .label { color: #8b94a7; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .val { font-size: 22px; font-weight: 700; color: #fff; }
+  .val.small { font-size: 16px; }
+  .pill {
+    display: inline-block; padding: 5px 12px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; margin-left: 6px;
+  }
+  .pill.on { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .pill.off { background: rgba(239,68,68,0.15); color: #f87171; }
+  .pill.warn { background: rgba(234,179,8,0.15); color: #fbbf24; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: currentColor; margin-right: 6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #232838; }
+  th { color: #8b94a7; font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  td { color: #e6e8eb; }
+  tr:last-child td { border-bottom: none; }
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+  .badge.active { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .badge.expired { background: rgba(239,68,68,0.15); color: #f87171; }
+  .row-actions button {
+    background: #1f2532; border: 1px solid #2a3142; color: #cbd2dd;
+    padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; margin-right: 4px;
+  }
+  .row-actions button:hover { background: #283047; color: #fff; }
+  .row-actions button.danger { color: #f87171; }
+  .row-actions button.danger:hover { background: rgba(239,68,68,0.15); }
+  form.add-form { display: grid; grid-template-columns: 1fr 1fr 100px auto; gap: 8px; align-items: end; margin-top: 10px; }
+  @media (max-width: 600px) { form.add-form { grid-template-columns: 1fr; } }
+  form.add-form input {
+    padding: 10px 12px; background: #0d1018; color: #e6e8eb;
+    border: 1px solid #232838; border-radius: 8px; font-size: 14px; outline: none;
+  }
+  form.add-form input:focus { border-color: #f59e0b; }
+  form.add-form button {
+    padding: 10px 18px; background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #1a0d00; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  .formrow-label { font-size: 11px; color: #8b94a7; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; display: block; }
+  .empty { color: #5b6478; font-size: 13px; padding: 16px 8px; text-align: center; }
+  .recent { font-size: 13px; max-height: 220px; overflow-y: auto; }
+  .recent .item { padding: 8px 0; border-bottom: 1px solid #1f2532; color: #cbd2dd; }
+  .recent .item:last-child { border-bottom: none; }
+  .recent .ts { color: #5b6478; font-size: 11px; margin-right: 8px; }
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #141821; border: 1px solid #232838; padding: 12px 18px;
+    border-radius: 10px; font-size: 14px; z-index: 100; opacity: 0; transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+  .toast.ok { border-color: rgba(34,197,94,0.4); color: #86efac; }
+  .toast.err { border-color: rgba(239,68,68,0.4); color: #fca5a5; }
+  .actions-link { color: #06b6d4; text-decoration: none; font-size: 13px; margin-left: 8px; }
+  .actions-link:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">Botify X · Admin <small>v1.0.0</small></div>
+      <div>
+        <a class="actions-link" href="/pair">Pair page</a>
+        <a class="actions-link" href="/dashboard">User view</a>
+        <a class="logout" href="/admin/logout">Sign out</a>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <div class="label">Bot status</div>
+          <div class="val small" id="bot-status">Loading…</div>
+        </div>
+        <div>
+          <div class="label">Phone</div>
+          <div class="val small" id="bot-phone">—</div>
+        </div>
+        <div>
+          <div class="label">Last activity</div>
+          <div class="val small" id="bot-last">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-4" style="margin-bottom: 18px;">
+      <div class="card"><div class="label">Uptime</div><div class="val" id="uptime">—</div></div>
+      <div class="card"><div class="label">Groups</div><div class="val" id="groups">—</div></div>
+      <div class="card"><div class="label">Messages</div><div class="val" id="messages">—</div></div>
+      <div class="card"><div class="label">Commands</div><div class="val" id="commands">—</div></div>
+    </div>
+
+    <div class="grid grid-2" style="margin-bottom: 18px;">
+      <div class="card">
+        <h2>Recent activity</h2>
+        <div class="recent" id="recent"><div class="empty">No activity yet.</div></div>
+      </div>
+      <div class="card">
+        <h2>Last command</h2>
+        <div id="last-command" class="recent"><div class="empty">No commands yet.</div></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 18px;">
+      <h2>Users (30-day access)</h2>
+      <div id="users-table"><div class="empty">Loading…</div></div>
+      <h2 style="margin-top: 22px;">Add user</h2>
+      <form class="add-form" id="add-form">
+        <div>
+          <label class="formrow-label" for="u-name">Username</label>
+          <input id="u-name" name="username" required>
+        </div>
+        <div>
+          <label class="formrow-label" for="u-pass">Password</label>
+          <input id="u-pass" name="password" required>
+        </div>
+        <div>
+          <label class="formrow-label" for="u-days">Days</label>
+          <input id="u-days" name="days" type="number" value="30" min="1" max="3650">
+        </div>
+        <div>
+          <button type="submit">Add user</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+<script>
+function fmtUptime(sec) {
+  if (!sec || sec < 0) return '0s';
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor((sec % 86400) / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (d) return d + 'd ' + h + 'h';
+  if (h) return h + 'h ' + m + 'm';
+  if (m) return m + 'm ' + s + 's';
+  return s + 's';
+}
+function fmtTs(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const now = Date.now();
+  const diff = Math.floor((now - d.getTime()) / 1000);
+  if (diff < 60) return diff + 's ago';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return d.toLocaleString();
+}
+function escape(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function toast(msg, kind) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + (kind || '');
+  setTimeout(() => { el.className = 'toast ' + (kind || ''); }, 2500);
+}
+
+async function loadStats() {
+  try {
+    const res = await fetch('/admin/stats.json', { cache: 'no-store' });
+    const s = await res.json();
+    const connected = s.pairing.status === 'paired';
+    document.getElementById('bot-status').innerHTML = connected
+      ? '<span class="pill on"><span class="dot"></span>Online</span>'
+      : '<span class="pill off"><span class="dot"></span>' + escape(s.pairing.status || 'offline') + '</span>';
+    document.getElementById('bot-phone').textContent = s.bot.phone ? '+' + s.bot.phone : '—';
+    document.getElementById('bot-last').textContent = fmtTs(s.bot.lastMessageAt);
+    document.getElementById('uptime').textContent = fmtUptime(s.bot.uptimeSec);
+    document.getElementById('groups').textContent = s.bot.groupCount;
+    document.getElementById('messages').textContent = s.bot.messagesReceived;
+    document.getElementById('commands').textContent = s.bot.commandsHandled;
+
+    const recent = s.bot.recent || [];
+    document.getElementById('recent').innerHTML = recent.length
+      ? recent.map(r => '<div class="item"><span class="ts">' + fmtTs(r.ts) + '</span>' + escape(r.text) + '</div>').join('')
+      : '<div class="empty">No activity yet.</div>';
+
+    const lc = s.bot.lastCommand;
+    document.getElementById('last-command').innerHTML = lc
+      ? '<div class="item"><span class="ts">' + fmtTs(lc.at) + '</span>*' + escape(lc.name) + ' from ' + escape(lc.from) + '</div>'
+      : '<div class="empty">No commands yet.</div>';
+  } catch (err) {
+    console.error('stats', err);
+  }
+}
+
+async function loadUsers() {
+  try {
+    const res = await fetch('/admin/users.json', { cache: 'no-store' });
+    const data = await res.json();
+    const users = data.users || [];
+    const html = users.length ? `
+      <table>
+        <thead>
+          <tr><th>Username</th><th>Status</th><th>Expires</th><th>Days</th><th></th></tr>
+        </thead>
+        <tbody>
+          ${users.map(u => `
+            <tr>
+              <td><b>${escape(u.username)}</b></td>
+              <td><span class="badge ${u.expired ? 'expired' : 'active'}">${u.expired ? 'Expired' : 'Active'}</span></td>
+              <td>${escape(new Date(u.expiresAt).toLocaleDateString())}</td>
+              <td>${u.daysLeft}</td>
+              <td class="row-actions">
+                <button onclick="extend('${escape(u.username)}', 30)">+30 days</button>
+                <button class="danger" onclick="remove('${escape(u.username)}')">Remove</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>` : '<div class="empty">No users yet. Add one below.</div>';
+    document.getElementById('users-table').innerHTML = html;
+  } catch (err) {
+    console.error('users', err);
+  }
+}
+
+async function addUser(e) {
+  e.preventDefault();
+  const username = document.getElementById('u-name').value.trim();
+  const password = document.getElementById('u-pass').value;
+  const days = parseInt(document.getElementById('u-days').value, 10) || 30;
+  try {
+    const res = await fetch('/admin/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password, days }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed');
+    toast(`Added "${username}" with ${days}-day access.`, 'ok');
+    document.getElementById('add-form').reset();
+    document.getElementById('u-days').value = 30;
+    loadUsers();
+  } catch (err) {
+    toast(err.message, 'err');
+  }
+}
+
+window.extend = async function(username, days) {
+  try {
+    const res = await fetch(`/admin/users/${encodeURIComponent(username)}/extend`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ days }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed');
+    toast(`Extended "${username}" by ${days} days.`, 'ok');
+    loadUsers();
+  } catch (err) { toast(err.message, 'err'); }
+};
+
+window.remove = async function(username) {
+  if (!confirm(`Remove user "${username}"?`)) return;
+  try {
+    const res = await fetch(`/admin/users/${encodeURIComponent(username)}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed');
+    toast(`Removed "${username}".`, 'ok');
+    loadUsers();
+  } catch (err) { toast(err.message, 'err'); }
+};
+
+document.getElementById('add-form').addEventListener('submit', addUser);
+loadStats();
+loadUsers();
+setInterval(loadStats, 4000);
+setInterval(loadUsers, 30000);
+</script>
+</body>
+</html>
